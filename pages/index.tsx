@@ -42,8 +42,8 @@ const Home: NextPage = () => {
   const { width, height } = useWindowSize()
   const [stockCode, setStockCode] = useState('MSFT')
   const { data } = useSWRImuutable(
-    // `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`,
-    '/mock.json',
+    `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`,
+    // '/mock.json',
     async (url) => {
       const res = await fetcher(url)
       const dataSource = res['Time Series (5min)'] as TimeSeries
@@ -62,11 +62,11 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     if (data) {
-      document.querySelector('#container').innerHTML = ''
+      document.querySelector('#container')?.innerHTML = ''
       const container = d3
         .select('#container')
         .attr('width', width - 100)
-        .attr('height', height + margin.top + margin.bottom)
+        .attr('height', height - 120)
         .append('g')
         .classed('svg-content-responsive', true)
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
@@ -240,37 +240,54 @@ const Home: NextPage = () => {
   }, [])
 
   return (
-    <div>
-      <div className="form-control">
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Search…"
-              className="input input-bordered"
-              {...register('stockCode', { required: true, maxLength: 30 })}
-            />
-            <button className="btn btn-square">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
+    <div className="flex flex-col h-screen">
+      <header className="h-30 flex items-center px-4">
+        <div className="navbar bg-base-100">
+          <div className="flex-1">
+            <a className="btn btn-ghost normal-case text-xl">daisyUI</a>
+            <span>{stockCode}</span>
           </div>
-        </form>
-      </div>
-      <div>
-        <svg id="container" preserveAspectRatio="xMidYMid meet" />
+          <div className="flex-none gap-2">
+            <div className="form form-control">
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    placeholder="Search…"
+                    className="input input-bordered"
+                    {...register('stockCode', {
+                      required: true,
+                      maxLength: 30,
+                    })}
+                  />
+                  <button className="btn btn-square">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div className="flex-1 justify-center items-center overflow-hidden place-items-center">
+        <svg
+          id="container"
+          preserveAspectRatio="xMidYMid meet"
+          className="place-items-center"
+        />
       </div>
     </div>
   )
