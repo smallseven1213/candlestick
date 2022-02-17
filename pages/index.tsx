@@ -6,7 +6,9 @@
 import type { NextPage } from 'next'
 import type { D3ZoomEvent } from 'd3'
 import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import * as d3 from 'd3'
+import { useCallback } from 'react'
 
 type TimeSeries = {
   [key: string]: {
@@ -26,6 +28,11 @@ const lineColorParser = (open: number, close: number) =>
   open === close ? 'silver' : open > close ? 'red' : 'green'
 
 const Home: NextPage = () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm()
   const [stockCode, setStockCode] = useState('MSFT')
 
   useEffect(() => {
@@ -223,7 +230,47 @@ const Home: NextPage = () => {
     })
   }, [stockCode])
 
-  return <svg id="container" />
+  const onSubmit = useCallback((formData) => {
+    if (formData.stockCode) {
+      setStockCode(formData.stockCode)
+    }
+  }, [])
+
+  return (
+    <div>
+      <div className="form-control">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="Search…"
+              className="input input-bordered"
+              {...register('stockCode', { required: true, maxLength: 30 })}
+            />
+            <button className="btn btn-square">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          </div>
+        </form>
+      </div>
+      <div>
+        <svg id="container" />
+      </div>
+    </div>
+  )
 }
 
 export default Home
