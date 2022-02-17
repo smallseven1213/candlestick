@@ -11,12 +11,5 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "i18n-ally.localesPaths": [
-    "locales",
-    "pages/language",
-    "components/pages/language",
-    "components/icons/languages",
-    "public/assets/common/languages"
-  ]
+  }
 }
