@@ -5,10 +5,13 @@
 // spec target: https://candlestick-chart.vercel.app/
 import type { NextPage } from 'next'
 import type { D3ZoomEvent } from 'd3'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import * as d3 from 'd3'
 import { useCallback } from 'react'
+import { useWindowSize } from 'react-use'
+import useSWRImuutable from 'swr/immutable'
+import { fetcher } from '../libs/fetcher'
 
 type TimeSeries = {
   [key: string]: {
@@ -27,27 +30,23 @@ type ResponseData = {
 const lineColorParser = (open: number, close: number) =>
   open === close ? 'silver' : open > close ? 'red' : 'green'
 
+const margin = { top: 15, right: 65, bottom: 205, left: 50 }
+
 const Home: NextPage = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm()
+  const containerRef = useRef<any>()
+  const { width, height } = useWindowSize()
   const [stockCode, setStockCode] = useState('MSFT')
-
-  useEffect(() => {
-    d3.json(
-      `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`,
-      {
-        headers: new Headers({
-          'x-rapidapi-host': 'alpha-vantage.p.rapidapi.com',
-          'x-rapidapi-key':
-            'b1ce7d6ccdmsh2c20195f3dde848p1750d9jsn420336a43a7a',
-        }),
-      }
-    ).then((data: any) => {
-      // get data
-      const dataSource = data['Time Series (5min)'] as TimeSeries
+  const { data } = useSWRImuutable(
+    // `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`,
+    '/mock.json',
+    async (url) => {
+      const res = await fetcher(url)
+      const dataSource = res['Time Series (5min)'] as TimeSeries
       const series = Object.values(dataSource).map((value, index) => ({
         key: index + 1,
         open: Number(value['1. open']),
@@ -57,33 +56,39 @@ const Home: NextPage = () => {
         volume: Number(value['5. volume']),
       }))
 
-      // draw area init
-      const margin = { top: 15, right: 65, bottom: 205, left: 50 },
-        w = 1000 - margin.left - margin.right,
-        h = 625 - margin.top - margin.bottom
+      return series
+    }
+  )
 
-      const svg = d3
+  useEffect(() => {
+    if (data) {
+      document.querySelector('#container').innerHTML = ''
+      const container = d3
         .select('#container')
-        .attr('width', w + margin.left + margin.right)
-        .attr('height', h + margin.top + margin.bottom)
+        .attr('width', width - 100)
+        .attr('height', height + margin.top + margin.bottom)
         .append('g')
+        .classed('svg-content-responsive', true)
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+
+      const w = width - margin.left - margin.right,
+        h = height - margin.top - margin.bottom
 
       // 計算x
       const xScale = d3
         .scaleLinear()
-        .domain([-40, series.length + 40])
+        .domain([-40, data.length + 40])
         .range([0, w])
       // const xDateScale = d3.scaleQuantize().domain([0, series.length]).range()
 
       const xBand = d3
         .scaleBand()
-        .domain(d3.range(-1, series.length))
+        .domain(d3.range(-1, data.length))
         .range([0, w])
-        .padding(0.3)
+        .padding(0.6)
       const xAxis = d3.axisBottom(xScale)
 
-      svg
+      container
         .append('rect')
         .attr('id', 'rect')
         .attr('width', w)
@@ -93,37 +98,37 @@ const Home: NextPage = () => {
         .attr('clip-path', 'url(#clip)')
 
       // 計算y: candlestick
-      const ymin = d3.min(series.map((r) => r.low)) as number
-      const ymax = d3.max(series.map((r) => r.high)) as number
+      const ymin = d3.min(data.map((r) => r.low)) as number
+      const ymax = d3.max(data.map((r) => r.high)) as number
       const yScale = d3
         .scaleLinear()
         .domain([ymin - 5, ymax + 5])
         .range([h, 0])
         .nice()
       const yAxis = d3.axisLeft(yScale)
-      const gY = svg.append('g').attr('class', 'axis y-axis').call(yAxis)
+      container.append('g').attr('class', 'axis y-axis').call(yAxis)
 
       // 計算y: volumn
-      const Y_VOLUMN_MAX = d3.max(series.map((r) => r.volume)) as number
+      const Y_VOLUMN_MAX = d3.max(data.map((r) => r.volume)) as number
       const yVolumnScale = d3
         .scaleLinear()
         .domain([0, Y_VOLUMN_MAX])
         .range([0, 100])
         .nice()
       const yVolumnAxis = d3.axisLeft(yVolumnScale)
-      const gVolumnY = svg
+      container
         .append('g')
         .attr('class', 'axis y-axis')
         .attr('transform', 'translate(0,' + (h - 100) + ')')
         .call(yVolumnAxis)
 
       // 畫圖表
-      var chartBody = svg
+      var chartBody = container
         .append('g')
         .attr('class', 'chartBody')
         .attr('clip-path', 'url(#clip)')
 
-      const gX = svg
+      const gX = container
         .append('g')
         .attr('class', 'axis x-axis')
         .attr('transform', 'translate(0,' + h + ')')
@@ -139,7 +144,7 @@ const Home: NextPage = () => {
       // draw rectangles
       let candles = chartBody
         .selectAll('.candle')
-        .data(series)
+        .data(data)
         .enter()
         .append('rect')
         .attr('x', (d, i) => xScale(i) - xBand.bandwidth())
@@ -157,7 +162,7 @@ const Home: NextPage = () => {
       // draw high and low
       let stems = chartBody
         .selectAll('g.line')
-        .data(series)
+        .data(data)
         .enter()
         .append('line')
         .attr('class', 'stem')
@@ -170,7 +175,7 @@ const Home: NextPage = () => {
       // volumns
       let volumns = chartBody
         .selectAll('.volumn')
-        .data(series)
+        .data(data)
         .enter()
         .append('rect')
         .attr('x', (d, i) => xScale(i) - xBand.bandwidth())
@@ -180,7 +185,7 @@ const Home: NextPage = () => {
         .attr('height', (d) => yVolumnScale(d.volume))
         .attr('fill', (d) => lineColorParser(d.open, d.close))
 
-      svg
+      container
         .append('defs')
         .append('clipPath')
         .attr('id', 'clip')
@@ -198,11 +203,9 @@ const Home: NextPage = () => {
         const t = event.transform
         let xScaleZ = t.rescaleX(xScale)
 
-        // d3.selectAll('.xAxis .tick text').style('display', 'none')
-
         candles
           .attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth() * t.k) / 2)
-          .attr('width', xBand.bandwidth() * t.k)
+          .attr('width', (xBand.bandwidth() * t.k) / 2)
         volumns
           .attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth() * t.k) / 2)
           .attr('width', (xBand.bandwidth() * t.k) / 3)
@@ -226,9 +229,9 @@ const Home: NextPage = () => {
         .on('zoom', zoomed)
       // .on('zoom.end', zoomend)
 
-      svg.call(zoom as any)
-    })
-  }, [stockCode])
+      container.call(zoom as any)
+    }
+  }, [data, width, height])
 
   const onSubmit = useCallback((formData) => {
     if (formData.stockCode) {
@@ -267,7 +270,7 @@ const Home: NextPage = () => {
         </form>
       </div>
       <div>
-        <svg id="container" />
+        <svg id="container" preserveAspectRatio="xMidYMid meet" />
       </div>
     </div>
   )
