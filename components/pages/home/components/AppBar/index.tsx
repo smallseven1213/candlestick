@@ -23,7 +23,7 @@ const AppBar = () => {
       <div className="navbar bg-base-100">
         <div className="flex-1 divide-x">
           <a className="btn btn-ghost normal-case text-xl">HOMEWORK</a>
-          <span className="px-12">{stockCode}</span>
+          <span className="px-4">{stockCode}</span>
         </div>
         <div className="flex-none gap-2">
           <div className="form form-control">
