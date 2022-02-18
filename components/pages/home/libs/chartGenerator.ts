@@ -155,12 +155,6 @@ export const chartGenerator = (
     const zoomed = (event: D3ZoomEvent<HTMLCanvasElement, any>) => {
       const t = event.transform
       let xScaleZ = t.rescaleX(xScale)
-      /**
-           * const xScale = d3
-          .scaleLinear()
-          .domain([-40, data.series.length + 40])
-          .range([0, w])
-           */
 
       candles
         .attr('x', (d, i) => xScaleZ(i) - (xBand.bandwidth() * t.k) / 2)
@@ -191,5 +185,6 @@ export const chartGenerator = (
     container.call(zoom as any)
   } catch (error) {
     console.debug(error)
+    throw error
   }
 }

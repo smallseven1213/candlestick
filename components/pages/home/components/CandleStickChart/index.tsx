@@ -1,5 +1,4 @@
-import type { D3ZoomEvent } from 'd3'
-import { useEffect, useContext } from 'react'
+import { useEffect, useContext, useState } from 'react'
 import * as d3 from 'd3'
 import { useWindowSize } from 'react-use'
 import useSWRImuutable from 'swr/immutable'
@@ -9,6 +8,7 @@ import type { APIResponse, SWRResponseData, TimeSeries } from '../../types/type'
 import { chartGenerator } from '../../libs/chartGenerator'
 
 const CandleStickChart = () => {
+  const [error, setError] = useState(false)
   const { stockCode } = useContext(HomeContext)
   const { width, height } = useWindowSize()
 
@@ -43,7 +43,9 @@ const CandleStickChart = () => {
 
   useEffect(() => {
     if (data) {
-      chartGenerator('#container', width, height, data)
+      try {
+        chartGenerator('#container', width, height, data)
+      } catch (error) {}
     }
   }, [data, width, height])
 
