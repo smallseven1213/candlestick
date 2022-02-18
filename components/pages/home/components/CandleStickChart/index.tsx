@@ -14,7 +14,9 @@ const CandleStickChart = () => {
   const { width, height } = useWindowSize()
 
   const { data, error } = useSWRImuutable<SWRResponseData, FetchResponseError>(
-    `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`,
+    stockCode
+      ? `https://alpha-vantage.p.rapidapi.com/query?interval=5min&function=TIME_SERIES_INTRADAY&symbol=${stockCode}&datatype=json&output_size=compact`
+      : null,
     async (url): Promise<SWRResponseData> => {
       try {
         const res = await fetcher<APIResponse>(url)
