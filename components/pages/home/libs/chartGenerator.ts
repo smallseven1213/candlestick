@@ -51,13 +51,16 @@ export const chartGenerator = (
       .attr('clip-path', 'url(#clip)')
 
     // 計算y: candlestick
-    const yScale = d3
+    const yPriceScale = d3
       .scaleLinear()
       .domain([data.statistics.priceLow - 5, data.statistics.priceHigh + 5])
       .range([h, 0])
       .nice()
-    const yAxis = d3.axisLeft(yScale).tickFormat((d) => `$${d}`)
-    container.append('g').attr('class', 'axis y-axis').call(yAxis)
+    const yPriceAxis = d3.axisLeft(yPriceScale).tickFormat((d) => `$${d}`)
+    container
+      .append('g')
+      .attr('class', 'axis y-axis price-y-axis')
+      .call(yPriceAxis)
 
     // 計算y: volume
     const yVolumeScale = d3
@@ -102,13 +105,13 @@ export const chartGenerator = (
       .append('rect')
       .attr('x', (d, i) => xScale(i) - xBand.bandwidth())
       .attr('class', 'candle')
-      .attr('y', (d) => yScale(Math.max(d.open, d.close)))
+      .attr('y', (d) => yPriceScale(Math.max(d.open, d.close)))
       .attr('width', xBand.bandwidth())
       .attr('height', (d) =>
         d.open === d.close
           ? 1
-          : yScale(Math.min(d.open, d.close)) -
-            yScale(Math.max(d.open, d.close))
+          : yPriceScale(Math.min(d.open, d.close)) -
+            yPriceScale(Math.max(d.open, d.close))
       )
       .attr('fill', (d) => lineColorParser(d.open, d.close))
 
@@ -121,8 +124,8 @@ export const chartGenerator = (
       .attr('class', 'stem')
       .attr('x1', (d, i) => xScale(i) - xBand.bandwidth() / 2)
       .attr('x2', (d, i) => xScale(i) - xBand.bandwidth() / 2)
-      .attr('y1', (d) => yScale(d.high))
-      .attr('y2', (d) => yScale(d.low))
+      .attr('y1', (d) => yPriceScale(d.high))
+      .attr('y2', (d) => yPriceScale(d.low))
       .attr('stroke', (d) => lineColorParser(d.open, d.close))
 
     // volumes
@@ -138,6 +141,7 @@ export const chartGenerator = (
       .attr('height', (d) => yVolumeScale(d.volume))
       .attr('fill', (d) => lineColorParser(d.open, d.close))
 
+    // view clip
     container
       .append('defs')
       .append('clipPath')
@@ -146,12 +150,13 @@ export const chartGenerator = (
       .attr('width', w)
       .attr('height', h)
 
-    // zoom event
+    // zoom event extend setup
     const extent: [[number, number], [number, number]] = [
       [0, 0],
       [w, h],
     ]
 
+    // zoom function
     const zoomed = (event: D3ZoomEvent<HTMLCanvasElement, any>) => {
       const t = event.transform
       let xScaleZ = t.rescaleX(xScale)
