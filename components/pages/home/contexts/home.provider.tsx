@@ -5,8 +5,10 @@ type ContextState = {
   setStockCode: (code: string) => void
 }
 
+const INITIAL_STOCK_CODE = 'TSLA'
+
 export const HomeContext = createContext<ContextState>({
-  stockCode: 'TSLA',
+  stockCode: INITIAL_STOCK_CODE,
   setStockCode: () => {},
 })
 
@@ -15,7 +17,7 @@ export const HomeContextProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  const [stockCode, setStockCode] = useState<string>()
+  const [stockCode, setStockCode] = useState<string>(INITIAL_STOCK_CODE)
 
   return (
     <HomeContext.Provider
