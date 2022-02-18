@@ -40,7 +40,6 @@ const CandleStickChart = () => {
           },
         }
       } catch (error) {
-        console.log('error!', error)
         throw error
       }
     }
@@ -53,8 +52,6 @@ const CandleStickChart = () => {
       } catch (error) {}
     }
   }, [data, width, height])
-
-  console.log('error!!', error)
 
   return (
     <div className="flex-1 justify-center items-center overflow-hidden">
